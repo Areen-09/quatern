@@ -59,6 +59,9 @@ def main():
         "--distpath", str(RELEASE_DIR),
         "--workpath", str(ROOT_DIR / ".pyinstaller_cache"),
         "--add-data", f"{DIST_DIR};dist",
+        "--collect-all", "pythonnet",
+        "--collect-all", "clr_loader",
+        "--collect-all", "webview",
         "--collect-submodules", "uvicorn",
         "--collect-submodules", "fastapi",
         "--collect-submodules", "backend",
@@ -78,6 +81,11 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"\nPackaging failed: {e}")
         sys.exit(1)
+
+    # Copy Quatern.exe.config into release folder so .NET runtime allows loading downloaded assemblies
+    config_src = ROOT_DIR / "Quatern.exe.config"
+    if config_src.exists():
+        shutil.copy2(config_src, RELEASE_DIR / "Quatern" / "Quatern.exe.config")
 
     # Clean temporary cache
     cache_dir = ROOT_DIR / ".pyinstaller_cache"
