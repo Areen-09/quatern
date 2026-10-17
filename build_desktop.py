@@ -81,7 +81,15 @@ def main():
 
     icon_path = ROOT_DIR / "public" / "icon.ico"
     if icon_path.exists():
-        cmd.extend(["--icon", str(icon_path)])
+        try:
+            with open(icon_path, "rb") as f:
+                header = f.read(4)
+            if header == b"\x00\x00\x01\x00":
+                cmd.extend(["--icon", str(icon_path)])
+            else:
+                print(f"Warning: {icon_path} is not a valid ICO binary. Skipping icon.")
+        except Exception as e:
+            print(f"Warning: Could not verify icon: {e}. Skipping icon.")
 
     try:
         subprocess.run(cmd, cwd=ROOT_DIR, check=True)
