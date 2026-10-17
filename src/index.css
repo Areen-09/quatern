@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+body { font-family: 'Inter', system-ui, sans-serif; font-feature-settings: 'cv11', 'ss01'; }
+
+/* Strict print styling: Print ONLY the formatted bill document without any UI chrome */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #printable-bill,
+  #printable-bill * {
+    visibility: visible !important;
+  }
+
+  #printable-bill {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    display: block !important;
+    z-index: 999999 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    margin: 5mm;
+    size: auto;
+  }
+}
