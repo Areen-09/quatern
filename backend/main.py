@@ -365,7 +365,16 @@ def chat_ai_assistant(req: AIAssistantChatRequest):
 def get_ai_assistant_snapshot():
     return ai.get_business_intelligence_snapshot()
 
-# Static frontend mount if dist exists
-dist_dir = Path(__file__).resolve().parent.parent / "dist"
+# Static frontend mount if dist exists (handles standard repo or PyInstaller bundle)
+def _resolve_dist_dir() -> Path:
+    import sys
+    if getattr(sys, "frozen", False):
+        base_dir = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        candidate = base_dir / "dist"
+        if candidate.exists():
+            return candidate
+    return Path(__file__).resolve().parent.parent / "dist"
+
+dist_dir = _resolve_dist_dir()
 if dist_dir.exists():
     app.mount("/", StaticFiles(directory=str(dist_dir), html=True), name="frontend")

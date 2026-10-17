@@ -34,3 +34,9 @@ logs/
 *.bin
 .DS_Store
 Thumbs.db
+
+# Build & Release outputs
+release/
+*.spec
+.pyinstaller_cache/
+

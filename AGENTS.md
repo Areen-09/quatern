@@ -14,6 +14,7 @@ PyWebView + FastAPI + SQLite + React 19 + Tailwind CSS v4 desktop application fo
 - `pnpm dev` - Start Vite dev server for frontend
 - `pnpm api` - Start FastAPI backend server on port 8000
 - `pnpm build` - Build the production frontend bundle to `dist/`
+- `pnpm package` - Compile standalone desktop executable to `release/Quatern/`
 - `pnpm format` - Format source files
 
 ## Architecture

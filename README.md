@@ -61,6 +61,12 @@ An open-source, offline-first desktop POS, inventory, CRM, and forecasting platf
   pnpm dev
   ```
 
+- **Package Standalone Executable (No Python/Node required for end-users)**:
+  ```powershell
+  pnpm package
+  ```
+  Generates `release/Quatern/Quatern.exe`. End users can run this executable directly on any 64-bit Windows machine.
+
 ---
 
 ## Project Structure

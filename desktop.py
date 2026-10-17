@@ -31,13 +31,18 @@ def run_fastapi(port: int):
     server = uvicorn.Server(config)
     server.run()
 
+def get_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    return Path(__file__).resolve().parent
+
 def main():
     api_port = 8000
     is_dev = "--dev" in sys.argv or "-d" in sys.argv
 
     # Ensure frontend bundle exists if running in non-dev production mode
-    dist_dir = Path(__file__).resolve().parent / "dist"
-    if not is_dev and not dist_dir.exists():
+    dist_dir = get_base_dir() / "dist"
+    if not is_dev and not dist_dir.exists() and not getattr(sys, "frozen", False):
         print("Frontend dist not found. Building with pnpm...")
         try:
             subprocess.run(["pnpm", "build"], check=True, shell=True)

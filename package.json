@@ -10,6 +10,7 @@
     "desktop": "python desktop.py",
     "desktop:dev": "python desktop.py --dev",
     "api": "python -m uvicorn backend.main:app --reload --port 8000",
+    "package": "python build_desktop.py",
     "format": "oxfmt src"
   },
   "dependencies": {
