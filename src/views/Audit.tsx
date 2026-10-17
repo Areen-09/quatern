@@ -29,6 +29,15 @@ export default function Audit({
     "products",
   )
   const [editModal, setEditModal] = useState(false)
+  const [wipeModal, setWipeModal] = useState(false)
+  const [pinModal, setPinModal] = useState(false)
+  const [currentPinInput, setCurrentPinInput] = useState("")
+  const [newPinInput, setNewPinInput] = useState("")
+  const [pinModalMsg, setPinModalMsg] = useState<{
+    text: string
+    isError: boolean
+  } | null>(null)
+  const [pinSubmitting, setPinSubmitting] = useState(false)
   const [shopName, setShopName] = useState(s.shop.name)
   const [ownerName, setOwnerName] = useState(s.shop.ownerName || "")
   const [gstin, setGstin] = useState(s.shop.gstin || "")
@@ -137,14 +146,7 @@ export default function Audit({
             <Btn variant="ghost" onClick={exportBackup}>
               Export backup
             </Btn>
-            <Btn
-              variant="danger"
-              onClick={() =>
-                confirm(
-                  "Are you sure you want to wipe all store data and start fresh?",
-                ) && dispatch({ type: "reset" })
-              }
-            >
+            <Btn variant="danger" onClick={() => setWipeModal(true)}>
               Wipe all data
             </Btn>
           </>
@@ -262,28 +264,11 @@ export default function Audit({
             <div>
               <Btn
                 variant="ghost"
-                onClick={async () => {
-                  const currentPin = prompt(
-                    "Enter current PIN (leave empty if not set):",
-                  )
-                  const newPin = prompt(
-                    "Enter new 4-6 digit Owner PIN (or leave empty to remove):",
-                  )
-                  if (newPin !== null) {
-                    const ok = await setOwnerPin(
-                      currentPin || null,
-                      newPin || null,
-                    )
-                    if (ok) {
-                      alert(
-                        newPin
-                          ? "Owner PIN set successfully!"
-                          : "Owner PIN removed.",
-                      )
-                    } else {
-                      alert("Current PIN was incorrect!")
-                    }
-                  }
+                onClick={() => {
+                  setCurrentPinInput("")
+                  setNewPinInput("")
+                  setPinModalMsg(null)
+                  setPinModal(true)
                 }}
               >
                 Configure Owner PIN
@@ -549,7 +534,7 @@ export default function Audit({
               <Btn variant="ghost" onClick={() => setEditModal(false)}>
                 Cancel
               </Btn>
-              <Btn>Save Profile</Btn>
+              <Btn type="submit">Save Profile</Btn>
             </div>
           </form>
         </Modal>
@@ -562,6 +547,163 @@ export default function Audit({
           dispatch={dispatch}
           onClose={() => setImportModal(false)}
         />
+      )}
+
+      {wipeModal && (
+        <Modal
+          title="Wipe All Store Data"
+          onClose={() => setWipeModal(false)}
+          className="max-w-md"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Icon name="alertTriangle" className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm font-semibold text-stone-900">
+                  Are you absolutely sure?
+                </div>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  This will permanently delete all invoices, customer records,
+                  inventory products, and audit logs from your local SQLite
+                  database. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+              <Btn variant="ghost" onClick={() => setWipeModal(false)}>
+                Cancel
+              </Btn>
+              <Btn
+                variant="danger"
+                onClick={() => {
+                  setWipeModal(false)
+                  dispatch({ type: "reset" })
+                }}
+              >
+                Yes, Wipe All Data
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {pinModal && (
+        <Modal
+          title="Configure Owner PIN"
+          onClose={() => setPinModal(false)}
+          className="max-w-md"
+        >
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setPinSubmitting(true)
+              setPinModalMsg(null)
+              try {
+                const ok = await setOwnerPin(
+                  currentPinInput.trim() || null,
+                  newPinInput.trim() || null,
+                )
+                setPinSubmitting(false)
+                if (ok) {
+                  if (newPinInput.trim()) {
+                    localStorage.setItem(
+                      "quatern.owner_pin",
+                      newPinInput.trim(),
+                    )
+                    dispatch({
+                      type: "shop",
+                      shop: { ...s.shop, hasPin: true },
+                    })
+                    setPinModalMsg({
+                      text: "Owner PIN saved successfully!",
+                      isError: false,
+                    })
+                  } else {
+                    localStorage.removeItem("quatern.owner_pin")
+                    dispatch({
+                      type: "shop",
+                      shop: { ...s.shop, hasPin: false },
+                    })
+                    setPinModalMsg({
+                      text: "Owner PIN removed.",
+                      isError: false,
+                    })
+                  }
+                  setTimeout(() => setPinModal(false), 1200)
+                } else {
+                  setPinModalMsg({
+                    text: "Current PIN was incorrect. Please try again.",
+                    isError: true,
+                  })
+                }
+              } catch {
+                setPinSubmitting(false)
+                setPinModalMsg({
+                  text: "Failed to update PIN. Please try again.",
+                  isError: true,
+                })
+              }
+            }}
+            className="space-y-4"
+          >
+            <p className="text-xs text-stone-500">
+              Protect sensitive business functions (margins, purchase costs,
+              data wipe) with a 4-6 digit numerical PIN.
+            </p>
+
+            {pinModalMsg && (
+              <div
+                className={`rounded-md p-2.5 text-xs font-medium ${
+                  pinModalMsg.isError
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                }`}
+              >
+                {pinModalMsg.text}
+              </div>
+            )}
+
+            {s.shop.hasPin && (
+              <Field label="Current PIN">
+                <Input
+                  type="password"
+                  maxLength={6}
+                  placeholder="Enter current PIN"
+                  value={currentPinInput}
+                  onChange={(e) => setCurrentPinInput(e.target.value)}
+                  className="font-mono text-center tracking-widest text-sm"
+                />
+              </Field>
+            )}
+
+            <Field label="New PIN (Leave blank to remove PIN)">
+              <Input
+                type="password"
+                maxLength={6}
+                placeholder="4-6 digits (or leave blank)"
+                value={newPinInput}
+                onChange={(e) => setNewPinInput(e.target.value)}
+                className="font-mono text-center tracking-widest text-sm"
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+              <Btn
+                type="button"
+                variant="ghost"
+                onClick={() => setPinModal(false)}
+              >
+                Cancel
+              </Btn>
+              <Btn type="submit" disabled={pinSubmitting}>
+                {pinSubmitting ? "Saving..." : "Save PIN"}
+              </Btn>
+            </div>
+          </form>
+        </Modal>
       )}
     </>
   )

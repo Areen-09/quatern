@@ -658,11 +658,12 @@ def setup_shop_profile(req: SetupShopRequest) -> AppStateSnapshot:
 
     pin_hash = hash_pin(req.pin) if req.pin and req.pin.strip() else None
 
-    cur.execute("SELECT COUNT(*) FROM shop_profile WHERE id = 'shop_1'")
-    if cur.fetchone()[0] > 0:
+    cur.execute("SELECT id FROM shop_profile LIMIT 1")
+    row = cur.fetchone()
+    if row:
         cur.execute(
-            "UPDATE shop_profile SET name = ?, owner_name = ?, gstin = ?, phone = ?, address = ?, country = ?, currency = ?, signature = ?, is_configured = 1, owner_pin_hash = COALESCE(?, owner_pin_hash) WHERE id = 'shop_1'",
-            (req.name, req.owner_name, req.gstin, req.phone, req.address, req.country, req.currency, req.signature, pin_hash)
+            "UPDATE shop_profile SET name = ?, owner_name = ?, gstin = ?, phone = ?, address = ?, country = ?, currency = ?, signature = ?, is_configured = 1, owner_pin_hash = COALESCE(?, owner_pin_hash) WHERE id = ?",
+            (req.name, req.owner_name, req.gstin, req.phone, req.address, req.country, req.currency, req.signature, pin_hash, row["id"])
         )
     else:
         cur.execute(
@@ -671,14 +672,30 @@ def setup_shop_profile(req: SetupShopRequest) -> AppStateSnapshot:
             (req.name, req.owner_name, req.gstin, req.phone, req.address, req.country, req.currency, req.signature, pin_hash, now)
         )
 
-    if not req.load_sample_catalog:
-        cur.execute("DELETE FROM invoice_lines")
-        cur.execute("DELETE FROM invoices")
-        cur.execute("DELETE FROM purchases")
-        cur.execute("DELETE FROM products")
-        cur.execute("DELETE FROM campaigns")
-
     log_audit(conn, "Setup", f"Shop profile configured for {req.name}")
+    conn.commit()
+    conn.close()
+    return query_full_snapshot()
+
+def reset_database() -> AppStateSnapshot:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM invoice_lines")
+    cur.execute("DELETE FROM invoices")
+    cur.execute("DELETE FROM purchases")
+    cur.execute("DELETE FROM products")
+    cur.execute("DELETE FROM customers")
+    cur.execute("DELETE FROM campaigns")
+    cur.execute("DELETE FROM suppliers")
+    cur.execute("DELETE FROM audit_log")
+    cur.execute("DELETE FROM shop_profile")
+    now = int(time.time() * 1000)
+    cur.execute(
+        "INSERT INTO shop_profile (id, name, owner_name, gstin, phone, address, country, currency, signature, is_configured, created_at) "
+        "VALUES ('shop_1', '', '', '', '', '', 'India', 'INR', '', 0, ?)",
+        (now,)
+    )
+    log_audit(conn, "Reset", "All store data was wiped and reset to fresh installation state.")
     conn.commit()
     conn.close()
     return query_full_snapshot()

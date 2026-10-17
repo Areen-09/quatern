@@ -45,6 +45,13 @@ app.add_middleware(
 def get_state():
     return db.query_full_snapshot()
 
+@app.post("/api/state/reset", response_model=AppStateSnapshot)
+def reset_state():
+    try:
+        return db.reset_database()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/shop/setup", response_model=AppStateSnapshot)
 def setup_shop(req: SetupShopRequest):
     try:

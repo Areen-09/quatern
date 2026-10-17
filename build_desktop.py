@@ -30,16 +30,19 @@ def main():
         print("Error: dist/index.html was not generated.")
         sys.exit(1)
 
+    venv_python = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+    py_exec = str(venv_python) if venv_python.exists() else sys.executable
+
     # 2. Check / install PyInstaller
     print("\n[2/3] Checking PyInstaller...")
     try:
-        import PyInstaller
-    except ImportError:
+        subprocess.run([py_exec, "-m", "PyInstaller", "--version"], check=True, capture_output=True)
+    except Exception:
         print("PyInstaller not found. Installing pyinstaller via uv/pip...")
         try:
             subprocess.run(["uv", "pip", "install", "pyinstaller"], check=True)
         except Exception:
-            subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
+            subprocess.run([py_exec, "-m", "pip", "install", "pyinstaller"], check=True)
 
     # 3. Clean prior release folder
     if RELEASE_DIR.exists():
@@ -49,7 +52,7 @@ def main():
     # 4. Run PyInstaller
     print("\n[3/3] Compiling standalone Windows executable...")
     cmd = [
-        sys.executable,
+        py_exec,
         "-m",
         "PyInstaller",
         "--noconfirm",
@@ -75,6 +78,10 @@ def main():
         "--hidden-import", "uvicorn.lifespan.on",
         str(ROOT_DIR / "desktop.py")
     ]
+
+    icon_path = ROOT_DIR / "public" / "icon.ico"
+    if icon_path.exists():
+        cmd.extend(["--icon", str(icon_path)])
 
     try:
         subprocess.run(cmd, cwd=ROOT_DIR, check=True)

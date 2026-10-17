@@ -92,9 +92,10 @@ export default function PendingPayments({
         ? s.customers.find((c) => c.id === inv.customerId)?.phone
         : "")
     if (!phone) {
-      alert(
-        "No phone number recorded for this customer. Please edit the bill to add their phone number.",
+      setStatusMsg(
+        "⚠️ No phone number recorded for this customer. Please edit the bill to add their phone number.",
       )
+      setTimeout(() => setStatusMsg(null), 4500)
       return
     }
     openWhatsAppLink(phone, message)

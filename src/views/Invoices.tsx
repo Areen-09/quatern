@@ -31,6 +31,7 @@ export default function Invoices({
     useState<"ALL" | Invoice["payment"]>("ALL")
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null)
   const [billFormat, setBillFormat] = useState<"style1" | "style2">("style1")
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
 
@@ -133,15 +134,14 @@ export default function Invoices({
     setTimeout(() => setStatusMsg(null), 3500)
   }
 
-  const handleDelete = async (inv: Invoice) => {
-    const confirm = window.confirm(
-      `Delete invoice ${inv.number}? This will permanently remove the bill and automatically return all ${inv.lines.reduce(
-        (sum, l) => sum + l.qty,
-        0,
-      )} items back into inventory stock.`,
-    )
-    if (!confirm) return
+  const handleDelete = (inv: Invoice) => {
+    setDeleteTarget(inv)
+  }
 
+  const confirmDeleteInvoice = async () => {
+    if (!deleteTarget) return
+    const inv = deleteTarget
+    setDeleteTarget(null)
     dispatch({ type: "deleteInvoice", id: inv.id })
     try {
       await deleteInvoice(inv.id)
@@ -1035,6 +1035,45 @@ export default function Invoices({
             </div>
           )}
         </div>
+      )}
+
+      {deleteTarget && (
+        <Modal
+          title={`Delete Invoice ${deleteTarget.number}`}
+          onClose={() => setDeleteTarget(null)}
+          className="max-w-md"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Icon name="alertTriangle" className="size-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm font-semibold text-stone-900">
+                  Delete {deleteTarget.number}?
+                </div>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  This will permanently delete this invoice and automatically
+                  return all{" "}
+                  <b>
+                    {deleteTarget.lines.reduce((sum, l) => sum + l.qty, 0)}{" "}
+                    item(s)
+                  </b>{" "}
+                  back into inventory stock.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+              <Btn variant="ghost" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Btn>
+              <Btn variant="danger" onClick={confirmDeleteInvoice}>
+                Yes, Delete Invoice
+              </Btn>
+            </div>
+          </div>
+        </Modal>
       )}
     </>
   )

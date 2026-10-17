@@ -458,6 +458,14 @@ export function useStore() {
         api.bulkImportCustomers(a.customers, a.conflictMode)
         break
       case "reset":
+        try {
+          localStorage.removeItem(KEY)
+          localStorage.removeItem(OLD_KEY)
+          localStorage.removeItem(LEGACY_KEY)
+          localStorage.removeItem("quatern.owner_pin")
+          localStorage.removeItem("quartern.owner_pin")
+          localStorage.removeItem("dukaanos.owner_pin")
+        } catch {}
         api.resetData().then((res) => {
           if (res) dispatchBase({ type: "sync", state: res })
         })

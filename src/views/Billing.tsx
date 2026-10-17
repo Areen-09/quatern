@@ -679,7 +679,7 @@ export default function Billing({
                   >
                     Cancel
                   </Btn>
-                  <Btn>Add to Bill</Btn>
+                  <Btn type="submit">Add to Bill</Btn>
                 </div>
               </div>
             </form>
@@ -986,7 +986,9 @@ export default function Billing({
                               setReceiptStatus("Opened in WhatsApp!")
                             }
                           } else {
-                            alert("No customer phone number available.")
+                            setReceiptStatus(
+                              "⚠️ No customer phone number available.",
+                            )
                           }
                         }}
                         className="text-emerald-700 hover:text-emerald-800 font-semibold"
@@ -1023,7 +1025,9 @@ export default function Billing({
                               )
                             }
                           } else {
-                            alert("No customer phone number available.")
+                            setReceiptStatus(
+                              "⚠️ No customer phone number available.",
+                            )
                           }
                         }}
                       >

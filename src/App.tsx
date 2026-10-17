@@ -40,12 +40,25 @@ export default function App() {
   const [messagingModal, setMessagingModal] = useState(false)
   const [aiModal, setAiModal] = useState(false)
 
-  if (!s.shop.isConfigured) {
+  const isShopConfigured = Boolean(
+    s.shop?.isConfigured || (s.shop as any)?.is_configured,
+  )
+
+  if (!isShopConfigured) {
     return (
       <Onboarding
         s={s}
         onComplete={(newState) => {
-          dispatch({ type: "sync", state: newState })
+          dispatch({
+            type: "sync",
+            state: {
+              ...newState,
+              shop: {
+                ...newState.shop,
+                isConfigured: true,
+              },
+            },
+          })
         }}
       />
     )

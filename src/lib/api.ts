@@ -9,9 +9,10 @@ import {
 } from "./store"
 
 const API_BASE =
-  typeof window !== "undefined" && window.location.port === "8000"
-    ? ""
-    : "http://127.0.0.1:8000"
+  typeof window !== "undefined" &&
+  (window.location.port === "8443" || window.location.port === "5173")
+    ? "http://127.0.0.1:8000"
+    : ""
 
 export const isDesktop = (): boolean =>
   typeof window !== "undefined" && "pywebview" in window
@@ -77,6 +78,12 @@ export async function updateShop(
 
 export async function fetchAppState(): Promise<State | null> {
   return await apiRequest<State>("/api/state")
+}
+
+export async function resetData(): Promise<State | null> {
+  return await apiRequest<State>("/api/state/reset", {
+    method: "POST",
+  })
 }
 
 export async function createInvoice(
@@ -223,10 +230,6 @@ export async function getEscPosReceiptBytes(
     }
   } catch {}
   return null
-}
-
-export async function resetData(): Promise<State | null> {
-  return await apiRequest<State>("/api/reset", { method: "POST" })
 }
 
 export function openWhatsAppLink(phone: string, text: string) {

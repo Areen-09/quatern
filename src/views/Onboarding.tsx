@@ -49,6 +49,7 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
   const [address, setAddress] = useState(s.shop.address || "")
   const [pin, setPin] = useState("")
   const [loading, setLoading] = useState(false)
+  const [validationError, setValidationError] = useState("")
   const [signatureData, setSignatureData] = useState<string>(
     s.shop.signature || "",
   )
@@ -150,10 +151,11 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
     reader.readAsDataURL(file)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) e.preventDefault()
+    setValidationError("")
     if (!shopName.trim()) {
-      alert("Please enter your shop or business name")
+      setValidationError("Please enter your shop or business name to proceed.")
       return
     }
 
@@ -173,17 +175,23 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
       loadSampleCatalog: false,
     }
 
-    const res = await setupShop(payload)
-    setLoading(false)
+    try {
+      const res = await setupShop(payload)
+      setLoading(false)
 
-    if (res) {
-      onComplete(res)
-    } else {
-      // Local fallback for offline/browser
-      const localState: State = {
-        ...s,
+      if (payload.pin) {
+        try {
+          localStorage.setItem("quatern.owner_pin", payload.pin)
+          localStorage.setItem("quartern.owner_pin", payload.pin)
+          localStorage.setItem("dukaanos.owner_pin", payload.pin)
+        } catch {}
+      }
+
+      const finalState: State = {
+        ...(res || s),
         shop: {
-          name: payload.name,
+          ...((res && res.shop) || s.shop),
+          name: payload.name || "My Store",
           ownerName: payload.ownerName,
           gstin: payload.gstin,
           phone: payload.phone,
@@ -194,14 +202,24 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
           isConfigured: true,
           hasPin: Boolean(payload.pin),
         },
-        products: loadSampleCatalog ? s.products : [],
-        invoices: loadSampleCatalog ? s.invoices : [],
-        campaigns: loadSampleCatalog ? s.campaigns : [],
       }
-      if (payload.pin) {
-        localStorage.setItem("quatern.owner_pin", payload.pin)
-        localStorage.setItem("quartern.owner_pin", payload.pin)
-        localStorage.setItem("dukaanos.owner_pin", payload.pin)
+      onComplete(finalState)
+    } catch {
+      setLoading(false)
+      const localState: State = {
+        ...s,
+        shop: {
+          ...s.shop,
+          name: payload.name || "My Store",
+          ownerName: payload.ownerName || "",
+          gstin: payload.gstin || "",
+          phone: payload.phone || "",
+          address: payload.address || "",
+          country: payload.country || "India",
+          currency: payload.currency || "INR",
+          isConfigured: true,
+          hasPin: Boolean(payload.pin),
+        },
       }
       onComplete(localState)
     }
@@ -227,6 +245,13 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
         {/* Main Setup Card */}
         <Card className="p-6 shadow-sm border-stone-200 bg-white">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {validationError && (
+              <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-xs text-red-700">
+                <Icon name="alertTriangle" className="size-4 shrink-0" />
+                <span>{validationError}</span>
+              </div>
+            )}
+
             {/* Section 1: Business Identity */}
             <div className="space-y-4">
               <div className="border-b border-stone-100 pb-2">
@@ -476,13 +501,39 @@ export default function Onboarding({ s, onComplete }: OnboardingProps) {
                 <span className="size-2 rounded-full bg-emerald-500" />
                 Data stored locally on this machine
               </div>
-              <Btn
-                disabled={loading || !shopName.trim()}
-                className="h-10 px-6 text-sm justify-center shadow-sm"
-              >
-                {loading ? "Setting up..." : "Complete Setup & Open Quatern"}
-                <Icon name="check" className="ml-1 size-4" />
-              </Btn>
+              <div className="flex items-center gap-2">
+                <Btn
+                  type="button"
+                  variant="ghost"
+                  className="h-10 px-4 text-xs text-stone-500 hover:text-stone-800"
+                  onClick={() => {
+                    const fallbackState: State = {
+                      ...s,
+                      shop: {
+                        ...s.shop,
+                        name: shopName.trim() || s.shop.name || "My Store",
+                        ownerName: ownerName.trim() || s.shop.ownerName || "",
+                        isConfigured: true,
+                      },
+                    }
+                    onComplete(fallbackState)
+                  }}
+                >
+                  Skip for now
+                </Btn>
+                <Btn
+                  type="submit"
+                  disabled={loading}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleSubmit(e)
+                  }}
+                  className="h-10 px-6 text-sm justify-center shadow-sm cursor-pointer"
+                >
+                  {loading ? "Setting up..." : "Complete Setup & Open Quatern"}
+                  <Icon name="check" className="ml-1 size-4" />
+                </Btn>
+              </div>
             </div>
           </form>
         </Card>
