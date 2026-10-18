@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Quatern-Windows-x64
-          path: release/Quatern-Windows-x64.zip
+          path: release/Quatern/
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
